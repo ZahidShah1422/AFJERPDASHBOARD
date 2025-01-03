@@ -1,0 +1,303 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p class="text-gray-600" id="date-range-text">Welcome back! Here's what's happening today.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <select id="time-filter" class="appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="today" {% if time_filter == 'today' %}selected{% endif %}>Today</option>
+                <option value="this_week" {% if time_filter == 'this_week' %}selected{% endif %}>This Week</option>
+                <option value="this_month" {% if time_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                <option value="custom" {% if time_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+            </select>
+            <div id="custom-range" class="{% if time_filter != 'custom' %}hidden{% endif %} flex items-center gap-2">
+                <input type="date" id="start-date" name="start_date" class="border border-gray-300 rounded-md py-2 px-3 text-sm" value="{{ start_date|date:'Y-m-d' }}">
+                <span>to</span>
+                <input type="date" id="end-date" name="end_date" class="border border-gray-300 rounded-md py-2 px-3 text-sm" value="{{ end_date|date:'Y-m-d' }}">
+                <button id="apply-custom-range" class="bg-blue-500 text-white py-2 px-4 rounded-md text-sm">Apply</button>
+            </div>
+            <button class="relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- HR Overview Card -->
+        <a href="{% url 'hr_dashboard' %}" class="block hover:shadow-lg transition-shadow duration-300" title="View HR Dashboard">
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">HR Overview</h2>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Employees on Leave</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ hr_data.employees_on_leave }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Total Active Employees</span>
+                            <span class="text-sm {% if hr_data.employee_growth >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                                {{ hr_data.employee_growth|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ hr_data.total_employees }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-green-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Pending Leave Approvals</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ hr_data.pending_leaves }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Fleet Status Card -->
+        <a href="{% url 'fleet_dashboard' %}" class="block hover:shadow-lg transition-shadow duration-300" title="View Fleet Dashboard">
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Fleet Status</h2>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Total Vehicles</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ fleet_data.total_vehicles }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Vehicles Under Maintenance</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ fleet_data.vehicles_maintenance }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Fuel Costs</span>
+                            <span class="text-sm {% if fleet_data.fuel_cost_change >= 0 %}text-red-500{% else %}text-green-500{% endif %}">
+                                {{ fleet_data.fuel_cost_change|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">${{ fleet_data.fuel_costs|floatformat:0|intcomma }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-yellow-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Routes Overview Card -->
+        <a href="{% url 'routes_dashboard' %}" class="block hover:shadow-lg transition-shadow duration-300" title="View Routes Dashboard">
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Routes Overview</h2>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Scheduled Routes</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ routes_data.routes_today }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-blue-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Routes Completed On-Time</span>
+                            <span class="text-sm {% if routes_data.on_time_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                                {{ routes_data.on_time_change|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ routes_data.on_time_rate|floatformat:0 }}%</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-green-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Open Incidents</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">{{ routes_data.open_incidents }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Financial Summary Card -->
+        <a href="{% url 'finance_dashboard' %}" class="block hover:shadow-lg transition-shadow duration-300" title="View Finance Dashboard">
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Financial Summary</h2>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Revenue</span>
+                            <span class="text-sm {% if finance_data.revenue_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                                {{ finance_data.revenue_change|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">${{ finance_data.revenue|floatformat:0|intcomma }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-green-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Pending Payments</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">${{ finance_data.pending_payments|floatformat:0|intcomma }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-yellow-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm text-gray-500">Expenses</span>
+                            <span class="text-sm {% if finance_data.expenses_change >= 0 %}text-red-500{% else %}text-green-500{% endif %}">
+                                {{ finance_data.expenses_change|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold">${{ finance_data.expenses|floatformat:0|intcomma }}</span>
+                            <div class="flex gap-1">
+                                {% for i in '12345'|make_list %}
+                                <div class="w-2 h-8 bg-red-500 rounded"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timeFilter = document.getElementById('time-filter');
+    const customRange = document.getElementById('custom-range');
+    const startDate = document.getElementById('start-date');
+    const endDate = document.getElementById('end-date');
+    const applyCustomRange = document.getElementById('apply-custom-range');
+    const dateRangeText = document.getElementById('date-range-text');
+
+    function updateDateRangeText(filter, start, end) {
+        let text = "Welcome back! Here's what's happening ";
+        switch (filter) {
+            case 'today':
+                text += "today.";
+                break;
+            case 'this_week':
+                text += "this week.";
+                break;
+            case 'this_month':
+                text += "this month.";
+                break;
+            case 'custom':
+                text += `from ${start} to ${end}.`;
+                break;
+        }
+        dateRangeText.textContent = text;
+    }
+
+    timeFilter.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customRange.classList.remove('hidden');
+        } else {
+            customRange.classList.add('hidden');
+            window.location.href = `{% url 'index' %}?filter=${this.value}`;
+        }
+    });
+
+    applyCustomRange.addEventListener('click', function() {
+        const start = startDate.value;
+        const end = endDate.value;
+        if (start && end) {
+            window.location.href = `{% url 'index' %}?filter=custom&start_date=${start}&end_date=${end}`;
+        }
+    });
+
+    // Initialize date range text
+    updateDateRangeText('{{ time_filter }}', '{{ start_date|date:"Y-m-d" }}', '{{ end_date|date:"Y-m-d" }}');
+});
+</script>
+{% endblock %}
+

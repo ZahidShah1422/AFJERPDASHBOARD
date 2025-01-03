@@ -1,0 +1,467 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Finance Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Finance Dashboard</h1>
+
+    <!-- Key Metrics Visualizations -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Revenue and Expenses -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Monthly Revenue vs. Expenses</h2>
+            <canvas id="revenueExpensesChart"></canvas>
+        </div>
+        <!-- Expense Breakdown -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Expense Breakdown</h2>
+            <canvas id="expenseBreakdownChart"></canvas>
+        </div>
+        <!-- Invoice Status -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Invoice Status</h2>
+            <canvas id="invoiceStatusChart"></canvas>
+        </div>
+        <!-- Overdue Payments -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Overdue Payments</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Overdue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for invoice in overdue_payments %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.client }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${{ invoice.amount|floatformat:2|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.due_date|date:"Y-m-d" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.due_date|timesince }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Tables -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Invoice List -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Invoice List</h2>
+            <div class="mb-4">
+                <label for="invoice-status-filter" class="block text-sm font-medium text-gray-700">Filter by Status:</label>
+                <select id="invoice-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="all">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="invoice-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for invoice in invoices %}
+                        <tr data-status="{{ invoice.status }}">
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.client }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${{ invoice.amount|floatformat:2|intcomma }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.date|date:"Y-m-d" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ invoice.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Expenditure Table -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Expenditure Table</h2>
+            <div class="mb-4">
+                <label for="expenditure-sort" class="block text-sm font-medium text-gray-700">Sort by:</label>
+                <select id="expenditure-sort" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="date">Date</option>
+                    <option value="category">Category</option>
+                    <option value="department">Department</option>
+                    <option value="amount">Amount</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="expenditure-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for expense in expenditures %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ expense.date|date:"Y-m-d" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ expense.category }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">{{ expense.department }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${{ expense.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Revenue Growth Report -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Revenue Growth Report</h2>
+            <canvas id="revenueGrowthChart"></canvas>
+        </div>
+        <!-- Expense Breakdown -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Departmental Expense Breakdown</h2>
+            <canvas id="deptExpenseChart"></canvas>
+        </div>
+        <!-- Invoice Aging Report -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Invoice Aging Report</h2>
+            <canvas id="invoiceAgingChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <!-- <div class="flex flex-wrap justify-center gap-4 mb-8">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Generate Invoice
+        </button>
+        <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Export Financial Report
+        </button>
+        <button class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+            View Budget Summary
+        </button>
+    </div> -->
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse the JSON data
+    const financialData = {{ financial_data|safe }};
+    const expenseBreakdown = {{ expense_breakdown|safe }};
+    const invoiceStatus = {{ invoice_status|safe }};
+    const revenueGrowth = {{ revenue_growth|safe }};
+    const deptExpenses = {{ dept_expenses|safe }};
+    const invoiceAging = {{ invoice_aging|safe }};
+
+    // Revenue and Expenses Chart
+    var revenueExpensesCtx = document.getElementById('revenueExpensesChart').getContext('2d');
+    new Chart(revenueExpensesCtx, {
+        type: 'line',
+        data: {
+            labels: financialData.map(item => item.month),
+            datasets: [{
+                label: 'Revenue',
+                data: financialData.map(item => item.revenue),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Expenses',
+                data: financialData.map(item => item.expenses),
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Expense Breakdown Chart
+    var expenseBreakdownCtx = document.getElementById('expenseBreakdownChart').getContext('2d');
+    new Chart(expenseBreakdownCtx, {
+        type: 'pie',
+        data: {
+            labels: expenseBreakdown.map(item => item.category),
+            datasets: [{
+                data: expenseBreakdown.map(item => item.total),
+                backgroundColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 205, 86)',
+                    'rgb(75, 192, 192)',
+                    'rgb(153, 102, 255)',
+                    'rgb(255, 159, 64)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+
+    // Invoice Status Chart
+    var invoiceStatusCtx = document.getElementById('invoiceStatusChart').getContext('2d');
+    new Chart(invoiceStatusCtx, {
+        type: 'bar',
+        data: {
+            labels: invoiceStatus.map(item => item.status),
+            datasets: [{
+                label: 'Invoice Count',
+                data: invoiceStatus.map(item => item.count),
+                backgroundColor: 'rgba(75, 192, 192, 0.6)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Revenue Growth Chart
+    var revenueGrowthCtx = document.getElementById('revenueGrowthChart').getContext('2d');
+    new Chart(revenueGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: revenueGrowth.map(item => item.month),
+            datasets: [{
+                label: 'Revenue',
+                data: revenueGrowth.map(item => item.total),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Departmental Expense Chart
+    var deptExpenseCtx = document.getElementById('deptExpenseChart').getContext('2d');
+    const departments = [...new Set(deptExpenses.map(item => item.department))];
+    const categories = [...new Set(deptExpenses.map(item => item.category))];
+    const datasets = categories.map(category => ({
+        label: category,
+        data: departments.map(dept => {
+            const expense = deptExpenses.find(item => item.department === dept && item.category === category);
+            return expense ? expense.total : 0;
+        }),
+        backgroundColor: `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.6)`
+    }));
+    new Chart(deptExpenseCtx, {
+        type: 'bar',
+        data: {
+            labels: departments,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true,
+                },
+                y: {
+                    stacked: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Invoice Aging Chart
+    var invoiceAgingCtx = document.getElementById('invoiceAgingChart').getContext('2d');
+    new Chart(invoiceAgingCtx, {
+        type: 'bar',
+        data: {
+            labels: invoiceAging.map(item => item.age_category),
+            datasets: [{
+                label: 'Outstanding Amount',
+                data: invoiceAging.map(item => item.total),
+                backgroundColor: 'rgba(255, 99, 132, 0.6)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Invoice List Filter
+    document.getElementById('invoice-status-filter').addEventListener('change', function() {
+        var status = this.value;
+        var rows = document.querySelectorAll('#invoice-table tbody tr');
+        rows.forEach(function(row) {
+            if (status === 'all' || row.getAttribute('data-status') === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Expenditure Table Sort
+    document.getElementById('expenditure-sort').addEventListener('change', function() {
+        var sortBy = this.value;
+        var tbody = document.querySelector('#expenditure-table tbody');
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows.sort(function(a, b) {
+            var aValue = a.querySelector(`td:nth-child(${getColumnIndex(sortBy)})`).textContent;
+            var bValue = b.querySelector(`td:nth-child(${getColumnIndex(sortBy)})`).textContent;
+
+            if (sortBy === 'amount') {
+                return parseFloat(bValue.replace('$', '').replace(',', '')) - parseFloat(aValue.replace('$', '').replace(',', ''));
+            } else if (sortBy === 'date') {
+                return new Date(bValue) - new Date(aValue);
+            } else {
+                return aValue.localeCompare(bValue);
+            }
+        });
+
+        rows.forEach(function(row) {
+            tbody.appendChild(row);
+        });
+    });
+
+    function getColumnIndex(sortBy) {
+        switch (sortBy) {
+            case 'date': return 1;
+            case 'category': return 2;
+            case 'department': return 3;
+            case 'amount': return 4;
+            default: return 1;
+        }
+    }
+});
+</script>
+{% endblock %}
+

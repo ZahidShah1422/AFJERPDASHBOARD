@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div>
+                        <a href="{% url 'index' %}" class="flex items-center py-4 px-2">
+                            <span class="font-semibold text-gray-500 text-lg">Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="{% url 'hr_dashboard' %}" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">HR</a>
+                        <a href="{% url 'fleet_dashboard' %}" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Fleet</a>
+                        <a href="{% url 'routes_dashboard' %}" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Routes</a>
+                        <a href="{% url 'finance_dashboard' %}" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Finance</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
