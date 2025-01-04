@@ -34,7 +34,7 @@ AFJDASHBOARD is a comprehensive web-based management information system designed
 - Backend: Django
 - Frontend: HTML5, CSS (Tailwind CSS), JavaScript
 - Data Visualization: Chart.js
-- Database: PostgreSQL
+- Database: Sqllite
 - Version Control: Git
 
 ## Setup Instructions
